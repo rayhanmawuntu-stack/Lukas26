@@ -1,6 +1,6 @@
 # Lukas26 — Birthday Dino Surprise
 
-A single-page birthday web app inspired by Chrome's dinosaur game. The player jumps over obstacles, crashes into a gift box, blows out a birthday candle, and then watches a greeting video.
+A single-page birthday web app inspired by Chrome's dinosaur game. The player collects hidden messages, crashes into a gift box, blows out number candles, sends a birthday wish, watches a greeting video, and opens a final letter.
 
 ## Live site
 
@@ -15,11 +15,16 @@ https://rayhanmawuntu-stack.github.io/Lukas26/
 - Responsive desktop and mobile controls
 - Tuned for the iPhone 11 viewport and Safari safe areas
 - **“tabrak kadonya ya sayang”** appears as the gift approaches
+- Four collectible hearts reveal hidden personal messages during the run
+- Heart counter in the game header
 - Candle scene titled **“Happy Birthday Lukas <3”**
-- Number **26** birthday candle with a warm yellow-orange flame
+- Separate number-shaped **2** and **6** birthday candles with warm yellow-orange flames
 - Synthesized **Happy Birthday** music-box melody during the cake scene
 - Music on/off control; the melody stops before the greeting video starts
-- Tap the cake or the candle button to blow out the flame
+- Tap the cake or the candle button to blow out the flames
+- A private wish form appears after the candles are blown out
+- The typed wish becomes a floating paper-star animation and is not stored
+- An animated envelope and personal letter appear after the video
 - Replayable; there is no one-time browser lock
 - Automatic deployment through GitHub Pages
 
@@ -42,7 +47,11 @@ Then open `http://localhost:8000`.
 
 ## Audio behavior
 
-The music-box melody is synthesized in the browser with the Web Audio API, so no separate music file is required. Browsers may require the first tap or key press before audio can play.
+The music-box melody is generated in the browser as a looping WAV audio track. Mobile browsers may require the first tap or key press before audio playback is allowed; the music control also provides a manual playback fallback.
+
+## Privacy
+
+The birthday wish is only displayed for the animation. It is not saved to local storage, sent to a server, or added to the URL.
 
 ## Video compatibility
 
