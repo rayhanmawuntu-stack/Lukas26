@@ -16,6 +16,9 @@ https://rayhanmawuntu-stack.github.io/Lukas26/
 - Tuned for the iPhone 11 viewport and Safari safe areas
 - **“tabrak kadonya ya sayang”** appears as the gift approaches
 - Candle scene titled **“Happy Birthday Lukas <3”**
+- Number **26** birthday candle with a warm yellow-orange flame
+- Synthesized **Happy Birthday** music-box melody during the cake scene
+- Music on/off control; the melody stops before the greeting video starts
 - Tap the cake or the candle button to blow out the flame
 - Replayable; there is no one-time browser lock
 - Automatic deployment through GitHub Pages
@@ -37,10 +40,14 @@ python3 -m http.server 8000
 
 Then open `http://localhost:8000`.
 
+## Audio behavior
+
+The music-box melody is synthesized in the browser with the Web Audio API, so no separate music file is required. Browsers may require the first tap or key press before audio can play.
+
 ## Video compatibility
 
 The greeting is a `.3gp` file. Playback depends on the codecs supported by the browser and device. The page includes a direct-link fallback below the video player. An H.264/AAC `.mp4` version would provide the broadest browser compatibility.
 
 ## Deployment
 
-The workflow in `.github/workflows/pages.yml` deploys the repository to GitHub Pages whenever `main` is updated.
+GitHub Pages publishes updates from the repository's `main` branch.
