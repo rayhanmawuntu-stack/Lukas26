@@ -1,0 +1,51 @@
+name: Apply cake and transition fix
+on:
+  push:
+    paths: [.github/workflows/apply-cake-transition-fix.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html'); s=p.read_text()
+          if 'pre-video-screen' in s and 'showPreVideo' in s:
+              raise SystemExit(0)
+          cake=""".cake-screen{background:radial-gradient(circle at 50% 26%,#fff,transparent 30%),linear-gradient(145deg,#f0f0f0,#bdbdbd)}.cake-scene{width:min(520px,100%);min-height:min(680px,100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.cake-kicker{margin:0 0 4px;color:#666;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.cake-scene h2{margin:0 0 12px;color:#292929;font-size:clamp(28px,6vw,52px);line-height:.92;letter-spacing:-.05em;max-width:10ch}.cake-target{position:relative;width:min(248px,60vw);height:238px;margin:0 auto 8px;cursor:pointer;outline:none}.plate{position:absolute;left:50%;bottom:15px;width:232px;height:18px;transform:translateX(-50%);border:2px solid #555;border-radius:50%;background:#e8e8e8;box-shadow:0 15px 25px #0003}.cake{position:absolute;left:50%;bottom:27px;width:188px;height:106px;transform:translateX(-50%);border:2px solid #444;border-radius:18px 18px 27px 27px;background:repeating-linear-gradient(0deg,#c6c6c6 0 14px,#eee 14px 28px)}.icing{position:absolute;left:50%;bottom:121px;width:194px;height:32px;transform:translateX(-50%);border:2px solid #444;border-radius:50%;background:#fafafa}.number-candles{position:absolute;left:50%;bottom:132px;width:100px;height:92px;transform:translateX(-50%)}.num-wrap{position:absolute;bottom:0;width:46px;height:92px}.num-two{left:3px}.num-six{right:3px}.number-candle{position:absolute;left:50%;bottom:0;transform:translateX(-50%);font-family:'Arial Black',Impact,sans-serif;font-size:62px;font-weight:900;line-height:.82;letter-spacing:-.08em;color:transparent;background:repeating-linear-gradient(135deg,#fafafa 0 9px,#c9c9c9 9px 14px);background-clip:text;-webkit-background-clip:text;-webkit-text-stroke:3px #3f3f3f;text-shadow:0 3px 0 #aaa,0 8px 12px #0002;filter:drop-shadow(0 5px 4px #0002)}.num-wrap .wick{position:absolute;left:50%;bottom:56px;width:3px;height:10px;transform:translateX(-50%);background:#222}.num-wrap .flame{position:absolute;left:50%;bottom:64px;width:19px;height:28px;transform:translateX(-50%) rotate(4deg);border:2px solid #d65a00;border-radius:55% 45% 55% 45%;background:radial-gradient(circle at 50% 66%,#fffbd0 0 18%,#ffd54a 19% 48%,#ff8a00 49% 76%,#e53935 77%);box-shadow:0 0 12px #ffd54af2,0 0 27px #ff6b00b8,0 0 44px #ff98006b;animation:flicker .7s ease-in-out infinite alternate;transform-origin:50% 100%;transition:.25s}.num-six .flame{animation-delay:-.3s}.num-wrap .smoke{position:absolute;left:50%;bottom:74px;width:8px;height:8px;transform:translateX(-50%);border:2px solid #777;border-radius:50%;opacity:0}.cake-scene.blown .flame{opacity:0;transform:translateX(-50%) translateY(7px) scale(.15);animation:none}.cake-scene.blown .smoke{animation:smoke 1.15s ease-out both}.cake-scene.blown .num-six .smoke{animation-delay:.08s}.cake-scene.blown .cake-target{animation:bounce .55s ease both}"""
+          s,n=re.subn(r'\.cake-screen\{.*?\.cake-scene\.blown \.cake-target\{animation:bounce \.55s ease both\}',cake,s,count=1,flags=re.S)
+          assert n==1,'cake CSS not found'
+          trans=""".pre-video-screen{z-index:24;background:radial-gradient(circle at 50% 40%,#fff,#ececec 36%,#cfcfcf 100%)}.pre-video-card{text-align:center;animation:preVideoPulse 1.15s ease both}.pre-video-kicker{margin:0 0 10px;color:#666;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.pre-video-star{font-size:56px;line-height:1;color:#444;text-shadow:0 0 22px #fff;animation:preVideoTwinkle .95s ease-in-out infinite alternate}.pre-video-card h3{margin:12px 0 0;color:#242424;font-size:clamp(30px,6vw,48px);line-height:.95;letter-spacing:-.05em}.pre-video-card p{margin:8px 0 0;color:#666;font-size:14px}@keyframes preVideoPulse{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}@keyframes preVideoTwinkle{from{transform:scale(.88) rotate(-6deg);opacity:.75}to{transform:scale(1.08) rotate(6deg);opacity:1}}"""
+          s=s.replace('.video-screen{z-index:25',trans+'.video-screen{z-index:25',1)
+          old=".cake-scene h2{margin-bottom:9px;font-size:clamp(35px,10.5vw,44px)}.cake-target{width:250px;height:240px;margin-bottom:1px;transform:scale(.9);transform-origin:center bottom}.cake-scene.blown .cake-target{animation:bounceMobile .55s ease both}"
+          new=".cake-scene h2{margin-bottom:8px;font-size:clamp(30px,9.2vw,40px)}.cake-target{width:226px;height:220px;margin-bottom:0;transform:scale(.94);transform-origin:center bottom}.number-candles{bottom:126px;width:92px;height:84px}.num-wrap{width:42px;height:84px}.number-candle{font-size:56px}.num-wrap .wick{bottom:51px}.num-wrap .flame{bottom:59px;width:17px;height:26px}.num-wrap .smoke{bottom:68px}.cake-scene.blown .cake-target{animation:bounceMobile .55s ease both}"
+          s=s.replace(old,new,1)
+          s=s.replace("</section><section class='screen video-screen' id='videoScreen' aria-hidden='true'>","</section><section class='screen pre-video-screen' id='preVideoScreen' aria-hidden='true'><div class='pre-video-card'><p class='pre-video-kicker'>your wish is on its way</p><div class='pre-video-star'>✦</div><h3>one more surprise...</h3><p>wait for it, sayang</p></div></section><section class='screen video-screen' id='videoScreen' aria-hidden='true'>",1)
+          s=s.replace("musicBtn=$('music'),videoScreen=$('videoScreen')","musicBtn=$('music'),preVideoScreen=$('preVideoScreen'),videoScreen=$('videoScreen')",1)
+          s=s.replace("wishFlight.classList.remove('fly');wishFlightText.textContent='';videoScreen.classList.remove('show');","wishFlight.classList.remove('fly');wishFlightText.textContent='';preVideoScreen.classList.remove('show');preVideoScreen.setAttribute('aria-hidden','true');videoScreen.classList.remove('show');",1)
+          s=s.replace('setTimeout(showVideo,1850)','setTimeout(showPreVideo,1850)',1)
+          old="function showVideo(){stopMusic();cakeScreen.classList.remove('show');cakeScreen.setAttribute('aria-hidden','true');videoScreen.classList.add('show');videoScreen.setAttribute('aria-hidden','false');burst();video.play().catch(()=>{})}"
+          new="function showPreVideo(){wishFlight.classList.remove('fly');preVideoScreen.classList.add('show');preVideoScreen.setAttribute('aria-hidden','false');setTimeout(showVideo,1200)}function showVideo(){stopMusic();cakeScreen.classList.remove('show');cakeScreen.setAttribute('aria-hidden','true');preVideoScreen.classList.remove('show');preVideoScreen.setAttribute('aria-hidden','true');videoScreen.classList.add('show');videoScreen.setAttribute('aria-hidden','false');burst();video.play().catch(()=>{})}"
+          s=s.replace(old,new,1)
+          assert 'showPreVideo' in s and 'preVideoScreen' in s
+          p.write_text(s)
+          PY
+      - name: Validate and commit
+        run: |
+          python3 <<'PY'
+          import re
+          from pathlib import Path
+          s=Path('index.html').read_text(); Path('/tmp/app.js').write_text(re.search(r'<script>(.*)</script>',s,re.S).group(1))
+          PY
+          node --check /tmp/app.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Fix cake layout and add pre-video transition'
+          git push
