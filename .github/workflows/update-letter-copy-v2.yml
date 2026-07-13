@@ -1,0 +1,77 @@
+name: Update birthday letter copy v2
+
+on:
+  push:
+    paths:
+      - .github/workflows/update-letter-copy-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Replace the complete letter block
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          html = path.read_text()
+
+          replacement = """<article class='letter-paper' data-letter-version='2'><p>Happy birthday sayang, semoga di usia ke 26 ini banyak hal baik yang akan terjadi ke kamu. Semoga kamu menjadi orang yang lebih baik lagi, mimpi kamu banyak yang terwujud, dan banyak kesempatan baru yg terbuka buat kamu.</p><p>Sayang, tetap jadi orang favoritku ya.</p><p class='signature'>With love,<br>Rayhan</p></article>"""
+
+          updated, count = re.subn(
+              r"<article class='letter-paper'(?:\s+[^>]*)?>.*?</article>",
+              replacement,
+              html,
+              count=1,
+              flags=re.S,
+          )
+
+          if count != 1:
+              raise SystemExit(f'Expected one letter block, replaced {count}.')
+
+          required = [
+              'Happy birthday sayang',
+              'kesempatan baru yg terbuka buat kamu',
+              'tetap jadi orang favoritku ya',
+              'With love,<br>Rayhan',
+              "data-letter-version='2'",
+          ]
+          for text in required:
+              if text not in updated:
+                  raise SystemExit(f'Missing required text: {text}')
+
+          path.write_text(updated)
+          PY
+
+      - name: Validate JavaScript
+        run: |
+          python3 <<'PY'
+          import re
+          from pathlib import Path
+          html = Path('index.html').read_text()
+          match = re.search(r'<script>(.*)</script>', html, re.S)
+          if not match:
+              raise SystemExit('Script block not found.')
+          Path('/tmp/index.js').write_text(match.group(1))
+          PY
+          node --check /tmp/index.js
+
+      - name: Commit updated letter
+        run: |
+          if git diff --quiet; then
+            echo "Letter is already updated."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Update birthday letter copy reliably"
+          git push
