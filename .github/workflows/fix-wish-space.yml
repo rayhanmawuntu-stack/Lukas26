@@ -1,0 +1,65 @@
+name: Fix wish input spacebar
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-wish-space.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Protect typing fields from game shortcuts
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text()
+
+          old = "addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='ArrowUp')jump(e)})"
+          new = "addEventListener('keydown',e=>{const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;if(e.code==='Space'||e.code==='ArrowUp')jump(e)})"
+
+          if new in text:
+              print('Keyboard guard already present.')
+          elif old in text:
+              text = text.replace(old, new, 1)
+          else:
+              raise SystemExit('Global keyboard listener not found; refusing an unsafe patch.')
+
+          if new not in text:
+              raise SystemExit('Keyboard guard validation failed.')
+
+          path.write_text(text)
+          PY
+
+      - name: Validate JavaScript
+        run: |
+          python3 <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('index.html').read_text()
+          match = re.search(r'<script>(.*)</script>', text, re.S)
+          if not match:
+              raise SystemExit('Script block not found.')
+          Path('/tmp/index.js').write_text(match.group(1))
+          PY
+          node --check /tmp/index.js
+
+      - name: Commit fix
+        run: |
+          if git diff --quiet; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Allow spaces while typing birthday wish"
+          git push
