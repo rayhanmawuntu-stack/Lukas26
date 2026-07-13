@@ -1,0 +1,75 @@
+name: Fix candles and music
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-candles-music.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch number candles and music
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text()
+          if 'number-candles' in s and 'audio/wav' in s:
+              print('Fix already applied.')
+              raise SystemExit(0)
+
+          old_css = re.search(r"\.candle\{.*?\.cake-scene\.blown \.cake-target\{animation:bounce \.55s ease both\}", s)
+          if not old_css:
+              raise SystemExit('Could not locate candle CSS')
+          new_css = ".number-candles{position:absolute;left:50%;bottom:151px;width:118px;height:108px;transform:translateX(-50%)}.num-wrap{position:absolute;bottom:0;width:54px;height:108px}.num-two{left:3px}.num-six{right:3px}.number-candle{position:absolute;left:50%;bottom:0;transform:translateX(-50%);font-family:'Arial Black',Impact,sans-serif;font-size:76px;font-weight:900;line-height:.82;letter-spacing:-.08em;color:transparent;background:repeating-linear-gradient(135deg,#fafafa 0 9px,#c9c9c9 9px 14px);background-clip:text;-webkit-background-clip:text;-webkit-text-stroke:3px #3f3f3f;text-shadow:0 3px 0 #aaa,0 8px 12px #0002;filter:drop-shadow(0 5px 4px #0002)}.num-wrap .wick{position:absolute;left:50%;bottom:79px;width:3px;height:12px;transform:translateX(-50%);background:#222}.num-wrap .flame{position:absolute;left:50%;bottom:88px;width:22px;height:34px;transform:translateX(-50%) rotate(4deg);border:2px solid #d65a00;border-radius:55% 45% 55% 45%;background:radial-gradient(circle at 50% 66%,#fffbd0 0 18%,#ffd54a 19% 48%,#ff8a00 49% 76%,#e53935 77%);box-shadow:0 0 12px #ffd54af2,0 0 27px #ff6b00b8,0 0 44px #ff98006b;animation:flicker .7s ease-in-out infinite alternate;transform-origin:50% 100%;transition:.25s}.num-six .flame{animation-delay:-.3s}.num-wrap .smoke{position:absolute;left:50%;bottom:98px;width:8px;height:8px;transform:translateX(-50%);border:2px solid #777;border-radius:50%;opacity:0}.cake-scene.blown .flame{opacity:0;transform:translateX(-50%) translateY(7px) scale(.15);animation:none}.cake-scene.blown .smoke{animation:smoke 1.15s ease-out both}.cake-scene.blown .num-six .smoke{animation-delay:.08s}.cake-scene.blown .cake-target{animation:bounce .55s ease both}"
+          s = s[:old_css.start()] + new_css + s[old_css.end():]
+
+          old_markup = "<div class='smoke'></div><div class='flame'></div><div class='wick'></div><div class='candle'>26</div>"
+          new_markup = "<div class='number-candles' aria-label='26'><div class='num-wrap num-two'><div class='smoke'></div><div class='flame'></div><div class='wick'></div><div class='number-candle'>2</div></div><div class='num-wrap num-six'><div class='smoke'></div><div class='flame'></div><div class='wick'></div><div class='number-candle'>6</div></div></div>"
+          if old_markup not in s:
+              raise SystemExit('Could not locate candle markup')
+          s = s.replace(old_markup, new_markup, 1)
+
+          audio_block = re.search(r"let ac=null,master=null,musicOn=true,musicTimer=0,musicGen=0;.*?function resize\(\)", s)
+          if not audio_block:
+              raise SystemExit('Could not locate old music code')
+          new_audio = "let musicOn=true,musicReady=false,musicUnlocked=false,musicUrl='';const musicAudio=new Audio();musicAudio.loop=true;musicAudio.preload='auto';musicAudio.volume=.5;const melody=[[79,.5],[79,.5],[81,1],[79,1],[84,1],[83,2],[null,.35],[79,.5],[79,.5],[81,1],[79,1],[86,1],[84,2],[null,.35],[79,.5],[79,.5],[91,1],[88,1],[84,1],[83,1],[81,2],[null,.35],[89,.5],[89,.5],[88,1],[84,1],[86,1],[84,2]];function buildMusic(){if(musicReady)return;const sr=22050,beat=.42,tail=.65,total=melody.reduce((a,[,b])=>a+b*beat,0)+tail,n=Math.ceil(total*sr),pcm=new Float32Array(n);let cursor=0;for(const[m,b]of melody){const step=b*beat;if(m!==null){const f=440*Math.pow(2,(m-69)/12),start=Math.floor(cursor*sr),len=Math.floor(Math.min(step*.92,.72)*sr);for(let i=0;i<len&&start+i<n;i++){const t=i/sr,env=Math.min(1,t/.012)*Math.exp(-5.2*t/Math.max(.2,step)),chime=Math.sin(2*Math.PI*f*t)*.62+Math.sin(4*Math.PI*f*t)*.22+Math.sin(6*Math.PI*f*t)*.1+Math.sin(8*Math.PI*f*t)*.05;pcm[start+i]+=chime*env*.55;const echo=start+i+Math.floor(.12*sr);if(echo<n)pcm[echo]+=chime*env*.12}}cursor+=step}const buf=new ArrayBuffer(44+n*2),v=new DataView(buf);function put(o,t){for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))}put(0,'RIFF');v.setUint32(4,36+n*2,true);put(8,'WAVE');put(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);put(36,'data');v.setUint32(40,n*2,true);for(let i=0;i<n;i++)v.setInt16(44+i*2,Math.max(-1,Math.min(1,pcm[i]))*32767,true);musicUrl=URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));musicAudio.src=musicUrl;musicReady=true}function unlockMusic(){buildMusic();if(musicUnlocked)return;const vol=musicAudio.volume;musicAudio.volume=0;const p=musicAudio.play();if(p&&p.then)p.then(()=>{setTimeout(()=>{musicAudio.pause();musicAudio.currentTime=0;musicAudio.volume=vol;musicUnlocked=true},90)}).catch(()=>{musicAudio.volume=vol})}function stopMusic(){musicAudio.pause();try{musicAudio.currentTime=0}catch{}}function startMusic(){if(!musicOn)return;buildMusic();musicAudio.volume=.5;try{musicAudio.currentTime=0}catch{};const p=musicAudio.play();if(p&&p.catch)p.catch(()=>{musicBtn.textContent='♫ TAP TO PLAY MUSIC';musicBtn.setAttribute('aria-pressed','false')})}function toggleMusic(){if(!musicOn){musicOn=true;musicBtn.setAttribute('aria-pressed','true');musicBtn.textContent='♫ MUSIC BOX ON';unlockMusic();setTimeout(startMusic,110)}else{musicOn=false;stopMusic();musicBtn.setAttribute('aria-pressed','false');musicBtn.textContent='♫ MUSIC BOX OFF'}}function resize()"
+          s = s[:audio_block.start()] + new_audio + s[audio_block.end():]
+          s = s.replace("function jump(e){if(e)e.preventDefault();if(finished)return;audio();startGame();", "function jump(e){if(e)e.preventDefault();if(finished)return;unlockMusic();startGame();")
+          s = s.replace("cakeScreen.setAttribute('aria-hidden','false');startMusic()", "cakeScreen.setAttribute('aria-hidden','false');setTimeout(startMusic,120)")
+          s = s.replace("musicBtn.addEventListener('click',toggleMusic);", "musicBtn.addEventListener('click',()=>{if(!musicOn){toggleMusic();return}unlockMusic();musicBtn.setAttribute('aria-pressed','true');musicBtn.textContent='♫ MUSIC BOX ON';setTimeout(startMusic,110)});")
+          s = s.replace("resize();makeClouds();reset();", "buildMusic();resize();makeClouds();reset();")
+          p.write_text(s)
+          PY
+
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          s = Path('index.html').read_text()
+          js = re.search(r'<script>(.*)</script>', s, re.S).group(1)
+          Path('/tmp/lukas26.js').write_text(js)
+          PY
+          node --check /tmp/lukas26.js
+
+      - name: Commit corrected app
+        run: |
+          if git diff --quiet; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix number candles and music playback"
+          git push
