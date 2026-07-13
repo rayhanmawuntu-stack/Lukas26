@@ -80,3 +80,5 @@ jobs:
           git add index.html .github
           git commit -m "Audit app and optimize phone experience"
           git push
+
+# retry after all payload files were verified
